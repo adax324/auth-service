@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.drivingschool.auth.exception.UserAlreadyExistsException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -77,12 +78,12 @@ class AuthControllerTest {
         }
 
         @Test
-        @DisplayName("should propagate IllegalArgumentException from service")
+        @DisplayName("should propagate UserAlreadyExistsException from service")
         void duplicateUsername_shouldPropagate() {
             when(userService.register(any(SignupRequest.class)))
-                    .thenThrow(new IllegalArgumentException("Username taken"));
+                    .thenThrow(new UserAlreadyExistsException("testuser"));
 
-            assertThrows(IllegalArgumentException.class, () -> authController.registerUser(validSignup));
+            assertThrows(UserAlreadyExistsException.class, () -> authController.registerUser(validSignup));
         }
     }
 

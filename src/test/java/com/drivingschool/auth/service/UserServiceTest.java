@@ -1,6 +1,7 @@
 package com.drivingschool.auth.service;
 
 import com.drivingschool.auth.entity.User;
+import com.drivingschool.auth.exception.UserAlreadyExistsException;
 import com.drivingschool.auth.payload.JwtResponse;
 import com.drivingschool.auth.payload.LoginRequest;
 import com.drivingschool.auth.payload.SignupRequest;
@@ -107,15 +108,15 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("should throw IllegalArgumentException when username already exists")
+        @DisplayName("should throw UserAlreadyExistsException when username already exists")
         void duplicateUsername_shouldThrow() {
             SignupRequest req = createSignupRequest("existing", "password123");
             when(userRepository.existsByUsername("existing")).thenReturn(true);
 
-            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            UserAlreadyExistsException ex = assertThrows(UserAlreadyExistsException.class,
                     () -> userService.register(req));
 
-            assertEquals("Username taken", ex.getMessage());
+            assertTrue(ex.getMessage().contains("existing"));
             verify(userRepository, never()).save(any());
             verify(passwordEncoder, never()).encode(any());
         }
