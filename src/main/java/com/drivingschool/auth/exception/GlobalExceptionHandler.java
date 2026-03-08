@@ -1,5 +1,6 @@
 package com.drivingschool.auth.exception;
 
+import com.drivingschool.auth.util.LogSanitizer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +38,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<Map<String, Object>> handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
-        log.warn("Registration rejected: username '{}' is already taken", ex.getAttemptedUsername());
+        log.warn("Registration rejected: username '{}' is already taken", LogSanitizer.sanitize(ex.getAttemptedUsername()));
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
         response.put("status", HttpStatus.CONFLICT.value());

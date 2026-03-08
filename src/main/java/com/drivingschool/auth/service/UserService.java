@@ -7,6 +7,7 @@ import com.drivingschool.auth.payload.LoginRequest;
 import com.drivingschool.auth.payload.SignupRequest;
 import com.drivingschool.auth.repository.UserRepository;
 import com.drivingschool.auth.security.JwtUtils;
+import com.drivingschool.auth.util.LogSanitizer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -31,16 +32,14 @@ public class UserService {
     @Transactional
     public User register(SignupRequest req) {
         if (userRepository.existsByUsername(req.getUsername())) {
-            log.warn("Registration failed: username '{}' is already taken", req.getUsername());
             throw new UserAlreadyExistsException(req.getUsername());
         }
         try {
             User u = new User(req.getUsername(), passwordEncoder.encode(req.getPassword()));
             User saved = userRepository.save(u);
-            log.info("User registered successfully: username='{}'", saved.getUsername());
+            log.info("User registered successfully: username='{}'", LogSanitizer.sanitize(saved.getUsername()));
             return saved;
         } catch (DataIntegrityViolationException e) {
-            log.warn("Registration failed due to concurrent signup: username='{}'", req.getUsername());
             throw new UserAlreadyExistsException(req.getUsername());
         }
     }
@@ -54,12 +53,12 @@ public class UserService {
         }
 
         String token = jwtUtils.generateJwtToken(user.getUsername());
-        log.info("User authenticated successfully: username='{}'", user.getUsername());
+        log.info("User authenticated successfully: username='{}'", LogSanitizer.sanitize(user.getUsername()));
         return new JwtResponse(token, user.getUsername());
     }
 
     private BadCredentialsException authenticationFailure(String username) {
-        log.warn("Authentication failed for username='{}'", username);
+        log.warn("Authentication failed for username='{}'", LogSanitizer.sanitize(username));
         return new BadCredentialsException("Invalid credentials");
     }
 }
