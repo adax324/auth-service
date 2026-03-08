@@ -92,6 +92,22 @@ class GlobalExceptionHandlerTest {
         assertEquals("", response.getBody().get("message"));
     }
 
+    // --- handleUserAlreadyExistsException ---
+
+    @Test
+    @DisplayName("handleUserAlreadyExistsException - should return 409 with exception message")
+    void handleUserAlreadyExists_shouldReturn409WithMessage() {
+        UserAlreadyExistsException ex = new UserAlreadyExistsException("testuser");
+
+        ResponseEntity<Map<String, Object>> response = handler.handleUserAlreadyExistsException(ex);
+
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(409, response.getBody().get("status"));
+        assertEquals("Username already taken", response.getBody().get("message"));
+        assertNotNull(response.getBody().get("timestamp"));
+    }
+
     // --- handleBadCredentials ---
 
     @Test

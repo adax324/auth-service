@@ -1,16 +1,21 @@
 package com.drivingschool.auth.service;
 
 import com.drivingschool.auth.entity.User;
+import com.drivingschool.auth.exception.UserAlreadyExistsException;
 import com.drivingschool.auth.payload.JwtResponse;
 import com.drivingschool.auth.payload.LoginRequest;
 import com.drivingschool.auth.payload.SignupRequest;
 import com.drivingschool.auth.repository.UserRepository;
 import com.drivingschool.auth.security.JwtUtils;
+import com.drivingschool.auth.util.LogSanitizer;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 public class UserService {
 
@@ -27,22 +32,34 @@ public class UserService {
     @Transactional
     public User register(SignupRequest req) {
         if (userRepository.existsByUsername(req.getUsername())) {
-            throw new IllegalArgumentException("Username taken");
+            throw new UserAlreadyExistsException(req.getUsername());
         }
-        User u = new User(req.getUsername(), passwordEncoder.encode(req.getPassword()));
-        return userRepository.save(u);
+        try {
+            User u = new User(req.getUsername(), passwordEncoder.encode(req.getPassword()));
+            User saved = userRepository.save(u);
+            log.info("User registered successfully: username='{}'", LogSanitizer.sanitize(saved.getUsername()));
+            return saved;
+        } catch (DataIntegrityViolationException e) {
+            throw new UserAlreadyExistsException(req.getUsername());
+        }
     }
 
     public JwtResponse authenticate(LoginRequest req) {
         User user = userRepository.findByUsername(req.getUsername())
-                .orElseThrow(() -> new BadCredentialsException("Invalid credentials"));
+                .orElseThrow(() -> authenticationFailure(req.getUsername()));
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
-            throw new BadCredentialsException("Invalid credentials");
+            throw authenticationFailure(req.getUsername());
         }
 
         String token = jwtUtils.generateJwtToken(user.getUsername());
+        log.info("User authenticated successfully: username='{}'", LogSanitizer.sanitize(user.getUsername()));
         return new JwtResponse(token, user.getUsername());
+    }
+
+    private BadCredentialsException authenticationFailure(String username) {
+        log.warn("Authentication failed for username='{}'", LogSanitizer.sanitize(username));
+        return new BadCredentialsException("Invalid credentials");
     }
 }
 

@@ -1,6 +1,7 @@
 package com.drivingschool.auth.service;
 
 import com.drivingschool.auth.entity.User;
+import com.drivingschool.auth.exception.UserAlreadyExistsException;
 import com.drivingschool.auth.payload.JwtResponse;
 import com.drivingschool.auth.payload.LoginRequest;
 import com.drivingschool.auth.payload.SignupRequest;
@@ -107,20 +108,35 @@ class UserServiceTest {
         }
 
         @Test
-        @DisplayName("should throw IllegalArgumentException when username already exists")
+        @DisplayName("should throw UserAlreadyExistsException when username already exists")
         void duplicateUsername_shouldThrow() {
             SignupRequest req = createSignupRequest("existing", "password123");
             when(userRepository.existsByUsername("existing")).thenReturn(true);
 
-            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+            UserAlreadyExistsException ex = assertThrows(UserAlreadyExistsException.class,
                     () -> userService.register(req));
 
-            assertEquals("Username taken", ex.getMessage());
+            assertEquals("existing", ex.getAttemptedUsername());
+            assertEquals("Username already taken", ex.getMessage());
             verify(userRepository, never()).save(any());
             verify(passwordEncoder, never()).encode(any());
         }
 
         @Test
+        @DisplayName("should throw UserAlreadyExistsException on concurrent save (DataIntegrityViolationException)")
+        void concurrentSave_shouldThrowUserAlreadyExistsException() {
+            SignupRequest req = createSignupRequest("existing", "password123");
+            when(userRepository.existsByUsername("existing")).thenReturn(false);
+            when(passwordEncoder.encode(any())).thenReturn("encoded");
+            when(userRepository.save(any(User.class)))
+                    .thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate key"));
+
+            UserAlreadyExistsException ex = assertThrows(UserAlreadyExistsException.class,
+                    () -> userService.register(req));
+
+            assertEquals("existing", ex.getAttemptedUsername());
+            assertEquals("Username already taken", ex.getMessage());
+        }
         @DisplayName("should call save exactly once")
         void shouldCallSaveOnce() {
             SignupRequest req = createSignupRequest("user", "password");
