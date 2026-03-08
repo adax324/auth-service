@@ -37,10 +37,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(UserAlreadyExistsException.class)
     public ResponseEntity<Map<String, Object>> handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
+        log.warn("Registration rejected: username '{}' is already taken", ex.getAttemptedUsername());
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
         response.put("status", HttpStatus.CONFLICT.value());
-        response.put("message", ex.getMessage());
+        response.put("message", "Username already taken");
 
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }

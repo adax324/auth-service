@@ -116,12 +116,27 @@ class UserServiceTest {
             UserAlreadyExistsException ex = assertThrows(UserAlreadyExistsException.class,
                     () -> userService.register(req));
 
-            assertTrue(ex.getMessage().contains("existing"));
+            assertEquals("existing", ex.getAttemptedUsername());
+            assertEquals("Username already taken", ex.getMessage());
             verify(userRepository, never()).save(any());
             verify(passwordEncoder, never()).encode(any());
         }
 
         @Test
+        @DisplayName("should throw UserAlreadyExistsException on concurrent save (DataIntegrityViolationException)")
+        void concurrentSave_shouldThrowUserAlreadyExistsException() {
+            SignupRequest req = createSignupRequest("existing", "password123");
+            when(userRepository.existsByUsername("existing")).thenReturn(false);
+            when(passwordEncoder.encode(any())).thenReturn("encoded");
+            when(userRepository.save(any(User.class)))
+                    .thenThrow(new org.springframework.dao.DataIntegrityViolationException("duplicate key"));
+
+            UserAlreadyExistsException ex = assertThrows(UserAlreadyExistsException.class,
+                    () -> userService.register(req));
+
+            assertEquals("existing", ex.getAttemptedUsername());
+            assertEquals("Username already taken", ex.getMessage());
+        }
         @DisplayName("should call save exactly once")
         void shouldCallSaveOnce() {
             SignupRequest req = createSignupRequest("user", "password");
