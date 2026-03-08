@@ -6,8 +6,7 @@ import io.jsonwebtoken.MalformedJwtException;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SecurityException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -15,10 +14,9 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
+@Slf4j
 @Component
 public class JwtUtils {
-
-    private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
     private final SecretKey key;
     private final int jwtExpirationMs;
@@ -48,15 +46,15 @@ public class JwtUtils {
             Jwts.parser().verifyWith(key).build().parseSignedClaims(authToken);
             return true;
         } catch (SecurityException e) {
-            logger.warn("Invalid JWT signature: {}", e.getMessage());
+            log.warn("Invalid JWT signature: {}", e.getMessage());
         } catch (MalformedJwtException e) {
-            logger.warn("Invalid JWT token: {}", e.getMessage());
+            log.warn("Invalid JWT token: {}", e.getMessage());
         } catch (ExpiredJwtException e) {
-            logger.warn("JWT token expired: {}", e.getMessage());
+            log.warn("JWT token expired: {}", e.getMessage());
         } catch (UnsupportedJwtException e) {
-            logger.warn("JWT token unsupported: {}", e.getMessage());
+            log.warn("JWT token unsupported: {}", e.getMessage());
         } catch (IllegalArgumentException e) {
-            logger.warn("JWT claims string is empty: {}", e.getMessage());
+            log.warn("JWT claims string is empty: {}", e.getMessage());
         }
         return false;
     }
