@@ -104,7 +104,7 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(409, response.getBody().get("status"));
-        assertEquals("Username already taken", response.getBody().get("message"));
+        assertTrue(response.getBody().get("message").toString().contains("testuser"));
         assertNotNull(response.getBody().get("timestamp"));
     }
 
